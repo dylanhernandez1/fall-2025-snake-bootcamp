@@ -13,9 +13,7 @@
 - [Week 5: Canvas Rendering and Game Visualization](#week-5-canvas-rendering-and-game-visualization)
 - [Week 6: Deep Q-Learning Theory and Implementation](#week-6-deep-q-learning-theory-and-implementation)
 - [Week 7: AI Agent Integration and Training](#week-7-ai-agent-integration-and-training)
-- [Week 8: Frontend Polish and User Experience](#week-8-frontend-polish-and-user-experience)
-- [Week 9: Performance Optimization and Production Readiness](#week-9-performance-optimization-and-production-readiness)
-- [Week 10: Deployment and Advanced Features](#week-10-deployment-and-advanced-features)
+- [Week 8: Deployment and Advanced Features](#week-8-deployment-and-advanced-features)
 - [Assessment and Projects](#assessment-and-projects)
 
 ## Project Overview
@@ -287,91 +285,23 @@ The application follows a monorepo structure with two main applications:
 
 ---
 
-## Week 8: Frontend Polish and User Experience
+## Week 8: Deployment and Advanced Features
 
 ### Learning Objectives (Week 8)
-
-- Create professional UI/UX design
-- Implement responsive layouts across all pages
-- Handle loading states and error scenarios
-- Optimize performance and accessibility
-
-### Topics Covered (Week 8)
-
-- **Component Architecture**: Reusable components and props design
-- **State Management**: React hooks and context for global state
-- **Error Handling**: Graceful degradation and user feedback
-- **Accessibility**: WCAG compliance and keyboard navigation
-
-### Practical Work (Week 8)
-
-- Build the About page with personal information and social links
-- Create the Projects showcase with `ProjectCard` components
-- Implement the portfolio assets system (projects.ts, socials.ts)
-- Add loading states and error handling throughout the app
-- Optimize images and static assets
-- Ensure responsive design across all devices
-
-### Deliverables (Week 8)
-
-- Complete portfolio website with all pages
-- Professional UI/UX design
-- Responsive layout on all devices
-- Proper error handling and loading states
-
----
-
-## Week 9: Performance Optimization and Production Readiness
-
-### Learning Objectives (Week 9)
-
-- Optimize application performance
-- Implement proper error handling and logging
-- Configure production builds and deployment
-- Add monitoring and analytics
-
-### Topics Covered (Week 9)
-
-- **Frontend Optimization**: Code splitting, lazy loading, and bundle analysis
-- **Backend Optimization**: Async performance and memory management
-- **Error Handling**: Proper logging and error recovery
-- **Production Configuration**: Environment variables and build optimization
-
-### Practical Work (Week 9)
-
-- Optimize React component rendering with useMemo and useCallback
-- Implement proper error boundaries in React
-- Add comprehensive logging to Python backend
-- Configure production builds for both frontend and backend
-- Implement graceful shutdown and error recovery
-- Add performance monitoring and metrics
-
-### Deliverables (Week 9)
-
-- Production-optimized applications
-- Comprehensive error handling
-- Logging and monitoring systems
-- Production build configurations
-
----
-
-## Week 10: Deployment and Advanced Features
-
-### Learning Objectives (Week 10)
 
 - Deploy applications to production environments
 - Implement CI/CD pipelines
 - Add advanced features and optimizations
 - Plan for scaling and maintenance
 
-### Topics Covered (Week 10)
+### Topics Covered (Week 8)
 
 - **Deployment Strategies**: Static hosting vs server deployment
 - **CI/CD Pipelines**: Automated testing and deployment
 - **Advanced Features**: Model persistence, game statistics, multiplayer potential
 - **Scaling Considerations**: Performance optimization and infrastructure
 
-### Practical Work (Week 10)
+### Practical Work (Week 8)
 
 - Configure Next.js for static export deployment
 - Set up Python server deployment with proper process management
@@ -380,7 +310,7 @@ The application follows a monorepo structure with two main applications:
 - Create deployment documentation and setup guides
 - Plan future enhancements and scaling strategies
 
-### Deliverables (Week 10)
+### Deliverables (Week 8)
 
 - Fully deployed production applications
 - CI/CD pipeline configuration
