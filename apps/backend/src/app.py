@@ -2,160 +2,111 @@ import asyncio
 import time
 import socketio
 from aiohttp import web
-from agent import DQN
-from game import Game
 from typing import Any, Dict
 
-sio: Any = socketio.AsyncServer(cors_allowed_origins="*")
+
+from model import DQN
+
+
+sio = socketio.AsyncServer(cors_allowed_origins="*")
 app = web.Application()
 sio.attach(app)
 
 
-# for keeping server alive
-async def handle_ping(request: web.Request) -> web.Response:
+# TODO: Create a SocketIO server instance with CORS settings to allow connections from frontend
+# Example: sio = socketio.AsyncServer(cors_allowed_origins="*")
+
+# TODO: Create a web application instance
+# Example: app = web.Application()
+
+# TODO: Attach the socketio server to the web app
+# Example: sio.attach(app)
+
+
+# Basic health check endpoint - keep this for server monitoring
+async def handle_ping(request: Any) -> Any:
+    """Simple ping endpoint to keep server alive and check if it's running"""
     return web.json_response({"message": "pong"})
 
 
+# TODO: Create a socketio event handler for when clients connect
 @sio.event
 async def connect(sid: str, environ: Dict[str, Any]) -> None:
-    print(f"client connected: {sid}")
+    """Handle client connections - called when a frontend connects to the server"""
+    # TODO: Print a message showing which client connected
+    # TODO: You might want to initialize game state here
+    pass
 
 
+# TODO: Create a socketio event handler for when clients disconnect
 @sio.event
 async def disconnect(sid: str) -> None:
-    print(f"disconnected: {sid}")
+    """Handle client disconnections - cleanup any resources"""
+    # TODO: Print a message showing which client disconnected
+    # TODO: Clean up any game sessions or resources for this client
+    pass
 
 
+# TODO: Create a socketio event handler for starting a new game
 @sio.event
 async def start_game(sid: str, data: Dict[str, Any]) -> None:
-    grid_width: int = data["grid_width"]
-    grid_height: int = data["grid_height"]
-    starting_tick: float = data["starting_tick"]
-    game = Game()
-    game.grid_width = grid_width
-    game.grid_height = grid_height
-    game.game_tick = starting_tick
-    agent = DQN()
-    await sio.save_session(sid, {"game": game, "agent": agent})
-    state = game.to_dict()
-    await sio.emit("update", state, room=sid)
-    await update_game(sid)
+    """Initialize a new game when the frontend requests it"""
+    # TODO: Extract game parameters from data (grid_width, grid_height, starting_tick)
+    # TODO: Create a new Game instance and configure it
+    # TODO: If implementing AI, create an agent instance here
+    # TODO: Save the game state in the session using sio.save_session()
+    # TODO: Send initial game state to the client using sio.emit()
+    # TODO: Start the game update loop
+
+    pass
 
 
-# @sio.event
-# async def save_model(sid):
-#     session = await sio.get_session(sid)
-#     agent = session['agent']
-#     agent.model.save()
+# TODO: Optional - Create event handlers for saving/loading AI models
 
 
-# @sio.event
-# async def load_model(sid, data):
-#     session = await sio.get_session(sid)
-#     game = session['game']
-#     agent = session['agent']
-#     agent.model.load(data['file_name'])
-#     await sio.save_session(sid, {'game': game, 'agent': agent})
-
-
-@sio.event
-async def change_delay(sid: str, delay: Dict[str, Any]) -> None:
-    session = await sio.get_session(sid)
-    game = session["game"]
-    agent = session["agent"]
-    game.game_tick = float(delay["delay"])
-    await sio.save_session(sid, {"game": game, "agent": agent})
-    global starting_game_tick
-    starting_game_tick = float(delay["delay"])
-
-
+# TODO: Implement the main game loop
 async def update_game(sid: str) -> None:
-    while True:
-        if not await sio.get_session(sid):
-            print(f"session {sid} not found")
-            break
-
-        session = await sio.get_session(sid)
-        game = session["game"]
-        agent = session["agent"]
-        await update_agent_game_state(game, agent)
-
-        await sio.save_session(sid, {"game": game, "agent": agent})
-        await sio.emit("update", game.to_dict(), room=sid)
-
-        elapsed = time.time() - game.last_tick
-        wait_time = max(0, game.game_tick - elapsed)
-        await asyncio.sleep(wait_time)
+    """Main game loop - runs continuously while the game is active"""
+    # TODO: Create an infinite loop
+    # TODO: Check if the session still exists (client hasn't disconnected)
+    # TODO: Get the current game and agent state from the session
+    # TODO: Implement AI agentic decisions
+    # TODO: Update the game state (move snake, check collisions, etc.)
+    # TODO: Save the updated session
+    # TODO: Send the updated game state to the client
+    # TODO: Wait for the appropriate game tick interval before next update
+    pass
 
 
-async def update_agent_game_state(game: Game, agent: DQN) -> None:
-    state = agent.get_state(game)
-    action = agent.get_action(state)
-
-    current_direction = game.snake.direction
-    if action[0] == 1:
-        new_direction = current_direction
-    elif action[1] == 1:
-        if current_direction == (0, -1):
-            new_direction = (-1, 0)
-        elif current_direction == (-1, 0):
-            new_direction = (0, 1)
-        elif current_direction == (0, 1):
-            new_direction = (1, 0)
-        else:
-            new_direction = (0, -1)
-    else:
-        if current_direction == (0, -1):
-            new_direction = (1, 0)
-        elif current_direction == (1, 0):
-            new_direction = (0, 1)
-        elif current_direction == (0, 1):
-            new_direction = (-1, 0)
-        else:
-            new_direction = (0, -1)
-
-    if new_direction == (0, -1):
-        game.queue_change("UP")
-    elif new_direction == (0, 1):
-        game.queue_change("DOWN")
-    elif new_direction == (-1, 0):
-        game.queue_change("LEFT")
-    else:
-        game.queue_change("RIGHT")
-
-    game.step()
-    done = not game.running
-    reward = agent.calculate_reward(game, done)
-    next_state = agent.get_state(game)
-
-    agent.train_short_memory(state, action, reward, next_state, done)
-    agent.remember(state, action, reward, next_state, done)
-
-    if done:
-        agent.train_long_memory()
-        agent.n_games += 1
-        agent.avg_score = (
-            (agent.avg_score * (agent.n_games - 1)) + game.score
-        ) / agent.n_games
-        print(
-            f"game: {agent.n_games}, score: {game.score}, average score: {agent.avg_score:.2f}"
-        )
-        game.reset()
+# TODO: Helper function for AI agent interaction with game
+async def update_agent_game_state(game: Game, agent: Any) -> None:
+    """Handle AI agent decision making and training"""
+    # TODO: Get the current game state for the agent
+    # TODO: Have the agent choose an action (forward, turn left, turn right)
+    # TODO: Convert the agent's action to a game direction
+    # TODO: Apply the direction change to the game
+    # TODO: Step the game forward one frame
+    # TODO: Calculate the reward for this action
+    # TODO: Get the new game state after the action
+    # TODO: Train the agent on this experience (short-term memory)
+    # TODO: Store this experience in the agent's memory
+    # TODO: If the game ended:
+    #   - Train the agent's long-term memory
+    #   - Update statistics (games played, average score)
+    #   - Reset the game for the next round
+    pass
 
 
+# TODO: Main server startup function
 async def main() -> None:
-    app.router.add_get("/ping", handle_ping)
-    runner = web.AppRunner(app)
-    try:
-        await runner.setup()
-        site = web.TCPSite(runner, "0.0.0.0", 8765)
-        print("server running at http://0.0.0.0:8765")
-        await site.start()
-        await asyncio.Event().wait()
-    except Exception as e:
-        print(f"An error occurred: {e}")
-    finally:
-        await runner.cleanup()
+    """Start the web server and socketio server"""
+    # TODO: Add the ping endpoint to the web app router
+    # TODO: Create and configure the web server runner
+    # TODO: Start the server on the appropriate host and port
+    # TODO: Print server startup message
+    # TODO: Keep the server running indefinitely
+    # TODO: Handle any errors gracefully
+    pass
 
 
 if __name__ == "__main__":

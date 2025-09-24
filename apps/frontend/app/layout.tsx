@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   description: "CSAI Fall 2025 Snake Bootcamp Project",
 };
 
+// basic root layout setup
 export default function RootLayout({
   children,
 }: Readonly<{

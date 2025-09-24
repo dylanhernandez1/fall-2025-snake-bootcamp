@@ -1,70 +1,119 @@
-import torch
-import torch.optim as optim
-import torch.nn as nn
-import torch.nn.functional as F
-import os
-import datetime
+# TODO: Import PyTorch for building neural networks
+# import torch
+# import torch.optim as optim
+# import torch.nn as nn
+# import torch.nn.functional as F
+# import os
+# import datetime
 from typing import Any
 
 
-class LinearQNet(nn.Module):
-    def __init__(self, input_size: int, hidden_size: int, output_size: int) -> None:
-        super().__init__()  # type: ignore
-        self.linear1 = nn.Linear(input_size, hidden_size)
-        self.linear2 = nn.Linear(hidden_size, output_size)
+class LinearQNet:
+    """
+    A simple neural network for Q-learning in the Snake game.
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = F.relu(self.linear1(x))
-        x = self.linear2(x)
+    This is a basic feedforward neural network with:
+    - Input layer: game state features (13 inputs)
+    - Hidden layer: fully connected layer with ReLU activation
+    - Output layer: Q-values for each action (3 outputs: straight, right, left)
+    """
+
+    def __init__(self, input_size: int, hidden_size: int, output_size: int) -> None:
+        """
+        Initialize the neural network layers.
+
+        Args:
+            input_size: Number of input features (13 for snake game state)
+            hidden_size: Number of neurons in hidden layer (e.g., 256)
+            output_size: Number of output actions (3: straight, right, left)
+        """
+        # Initialize the neural network as a PyTorch nn.Module
+        super().__init__()
+
+        # TODO: Create the network layers
+
+        pass
+
+    def forward(self, x: Any) -> Any:
+        """
+        Forward pass through the neural network.
+
+        Args:
+            x: Input tensor containing the game state
+
+        Returns:
+            Output tensor with Q-values for each action
+        """
+        # TODO: Apply ReLU activation to first layer
+        # TODO: Apply second layer (no activation for Q-values)
+
         return x
 
     def save(self) -> None:
-        model_folder_path = "./model"
-        file_name = f'model-{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.pth'
-        if not os.path.exists(model_folder_path):
-            os.makedirs(model_folder_path)
-        file_name = os.path.join(model_folder_path, file_name)
-        torch.save(self.state_dict(), file_name)
+        """Save the trained model to disk with timestamp."""
+        # TODO: Create model directory if it doesn't exist
+        # TODO: Generate filename with timestamp
+        # TODO: Save the model state dictionary
+
+        pass
 
     def load(self, file_name: str) -> None:
-        file_name = os.path.join("./model", file_name)
-        self.load_state_dict(torch.load(file_name))
+        """Load a previously saved model from disk."""
+        # TODO: Construct full file path
+        # TODO: Load the model state dictionary
+
+        pass
 
 
 class QTrainer:
-    def __init__(self, model: nn.Module, lr: float, gamma: float) -> None:
-        self.lr: float = lr
-        self.gamma: float = gamma
-        self.model: nn.Module = model
-        self.optimizer = optim.Adam(model.parameters(), lr=self.lr)
-        self.criterion = nn.MSELoss()
+    """
+    Trainer class for the Q-learning neural network.
+
+    Handles the training process using the Bellman equation:
+    Q(s,a) = r + γ * max(Q(s',a'))
+
+    Where:
+    - Q(s,a) = Q-value for state s and action a
+    - r = immediate reward
+    - γ = discount factor (gamma)
+    - s' = next state
+    - a' = possible actions in next state
+    """
+
+    def __init__(self, model: Any, lr: float, gamma: float) -> None:
+        """
+        Initialize the trainer with model and hyperparameters.
+
+        Args:
+            model: The neural network to train
+            lr: Learning rate for the optimizer
+            gamma: Discount factor for future rewards
+        """
+        # TODO: Store hyperparameters
+        # TODO: Initialize Adam optimizer
+        # TODO: Initialize Mean Squared Error loss function
+
+        pass
 
     def train_step(
         self, state: Any, action: Any, reward: Any, next_state: Any, done: Any
     ) -> None:
-        if isinstance(state, tuple):
-            state = torch.stack([s for s in state])  # type: ignore
-            next_state = torch.stack([s for s in next_state])
-            action = torch.tensor(action, dtype=torch.float)
-            reward = torch.tensor(reward, dtype=torch.float)
-        else:
-            state = state.unsqueeze(0)
-            next_state = next_state.unsqueeze(0)
-            action = torch.tensor([action], dtype=torch.float)
-            reward = torch.tensor([reward], dtype=torch.float)
-            done = (done,)
+        """
+        Perform one training step on the neural network.
 
-        pred = self.model(state)
-        target = pred.clone()
-        for idx in range(len(done)):
-            Q_new = reward[idx]
-            if not done[idx]:
-                Q_new = reward[idx] + self.gamma * torch.max(  # type: ignore
-                    self.model(next_state[idx].unsqueeze(0)).detach()
-                )
-            target[idx][torch.argmax(action[idx]).item()] = Q_new
+        This implements the Q-learning algorithm update rule.
 
-        self.optimizer.zero_grad()
-        loss = self.criterion(target, pred)
-        loss.backward()
-        self.optimizer.step()  # type: ignore
+        Args:
+            state: Current game state(s)
+            action: Action(s) taken
+            reward: Reward(s) received
+            next_state: Next game state(s)
+            done: Whether the game ended
+        """
+        # TODO: Handle both single experiences and batches
+        # TODO: Get current Q-values from the model
+        # TODO: Clone predictions to create target values
+        # TODO: Update target values using Bellman equation
+        # TODO: Perform gradient descent
+
+        pass

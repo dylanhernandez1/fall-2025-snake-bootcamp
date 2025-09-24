@@ -1,202 +1,119 @@
 from typing import Deque, Tuple, List, Optional
+
+# Import necessary libraries
 import torch
 import torch.nn as nn
 from collections import deque
 import random
 from game import Game
+
 from model import LinearQNet, QTrainer
 
-MAX_MEMORY = 100_000
-BATCH_SIZE = 1000
-LR = 0.001
+
+# TODO: Define constants for the DQN agent
 
 
-class DQN(nn.Module):
+class DQN:
+    """
+    Deep Q-Network agent for playing Snake using reinforcement learning.
+
+    This agent uses a neural network to learn the optimal policy for playing Snake.
+    It learns through trial and error, getting rewards for good actions (eating food)
+    and penalties for bad actions (hitting walls or itself).
+    """
+
     def __init__(self: "DQN") -> None:
-        super().__init__()  # type: ignore
-        self.n_games = 0
-        self.avg_score: float = 0
-        self.epsilon = 0.9
-        self.epsilon_decay = 0.995
-        self.epsilon_min = 0.1
-        self.gamma = 0.95
-        self.memory: Deque[Tuple[torch.Tensor, List[int], int, torch.Tensor, bool]] = (
-            deque(maxlen=MAX_MEMORY)
-        )
-        self.model: LinearQNet = LinearQNet(13, 256, 3)
-        self.trainer: QTrainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
+        """Initialize the DQN agent with all necessary components."""
+        # TODO: Initialize training statistics
+        # TODO: Initialize epsilon-greedy exploration parameters
+        # TODO: Initialize memory for experience replay
+        # TODO: Initialize the neural network and trainer
 
-    def get_state(self, game: "Game") -> torch.Tensor:
-        head = game.snake.head
+        pass
 
-        def normalize_distance(dist: float, max_dist: float) -> float:
-            return dist / max_dist
+    def get_state(self, game: "Game") -> List[float]:
+        """
+        Extract the current state of the game as input features for the neural network.
 
-        def get_direction_state() -> list[int]:
-            dir_state: list[int] = [0, 0, 0, 0]
-            if game.snake.direction == (0, -1):
-                dir_state[0] = 1
-            elif game.snake.direction == (0, 1):
-                dir_state[1] = 1
-            elif game.snake.direction == (-1, 0):
-                dir_state[2] = 1
-            elif game.snake.direction == (1, 0):
-                dir_state[3] = 1
-            return dir_state
+        The state includes:
+        - Danger detection in three directions (straight, right, left)
+        - Food direction relative to snake head (up, down, left, right)
+        - Normalized distances to food
+        - Current snake direction
+        """
+        # TODO: Get the snake's head position
+        # TODO: Helper function to normalize distances
+        # TODO: Get current direction as one-hot encoding
 
-        def get_danger_state() -> list[bool]:
-            danger_straight = False
-            danger_right = False
-            danger_left = False
+        # TODO: Detect dangers in three directions relative to current direction
+        # TODO: Get food direction relative to snake head
+        # TODO: Calculate normalized distances to food
+        # TODO: Combine all features into a single state vector
+        # TODO: Return state as PyTorch tensor
 
-            dir_up = game.snake.direction == (0, -1)
-            dir_down = game.snake.direction == (0, 1)
-            dir_left = game.snake.direction == (-1, 0)
-            dir_right = game.snake.direction == (1, 0)
-
-            def will_collide(point: tuple[int, int]) -> bool:
-                x, y = point
-                return (
-                    x < 0
-                    or x >= game.grid_width
-                    or y < 0
-                    or y >= game.grid_height
-                    or point in game.snake.body
-                )
-
-            if (
-                dir_up
-                and will_collide((head[0], head[1] - 1))
-                or dir_down
-                and will_collide((head[0], head[1] + 1))
-                or dir_left
-                and will_collide((head[0] - 1, head[1]))
-                or dir_right
-                and will_collide((head[0] + 1, head[1]))
-            ):
-                danger_straight = True
-
-            if (
-                dir_up
-                and will_collide((head[0] + 1, head[1]))
-                or dir_down
-                and will_collide((head[0] - 1, head[1]))
-                or dir_left
-                and will_collide((head[0], head[1] - 1))
-                or dir_right
-                and will_collide((head[0], head[1] + 1))
-            ):
-                danger_right = True
-
-            if (
-                dir_up
-                and will_collide((head[0] - 1, head[1]))
-                or dir_down
-                and will_collide((head[0] + 1, head[1]))
-                or dir_left
-                and will_collide((head[0], head[1] + 1))
-                or dir_right
-                and will_collide((head[0], head[1] - 1))
-            ):
-                danger_left = True
-
-            return [danger_straight, danger_right, danger_left]
-
-        food_dir: list[int] = [0, 0, 0, 0]
-        if game.food.position[1] < head[1]:
-            food_dir[0] = 1
-        if game.food.position[1] > head[1]:
-            food_dir[1] = 1
-        if game.food.position[0] < head[0]:
-            food_dir[2] = 1
-        if game.food.position[0] > head[0]:
-            food_dir[3] = 1
-
-        food_dist_x: float = normalize_distance(
-            abs(game.food.position[0] - head[0]), game.grid_width
-        )
-        food_dist_y: float = normalize_distance(
-            abs(game.food.position[1] - head[1]), game.grid_height
-        )
-
-        danger_state: list[bool] = get_danger_state()
-        dir_state: list[int] = get_direction_state()
-
-        state: list[float] = (
-            danger_state + food_dir + [food_dist_x, food_dist_y] + dir_state
-        )
-
-        return torch.tensor(state, dtype=torch.float)
-
-    from typing import Optional
+        return []  # Placeholder return for now
 
     def calculate_reward(self, game: "Game", done: bool) -> int:
-        reward = 0
+        """
+        Calculate the reward for the current game state.
 
-        head = game.snake.head
-        food = game.food.position
-        prev_distance: Optional[int] = (
-            self.previous_distance if hasattr(self, "previous_distance") else None
-        )
-        current_distance: int = abs(head[0] - food[0]) + abs(head[1] - food[1])
+        Rewards encourage good behavior:
+        - Positive reward for eating food
+        - Small positive reward for moving closer to food
+        - Small negative reward for moving away from food
+        - Large negative reward for dying
+        """
+        # TODO: Initialize reward
+        # TODO: Get current positions
+        # TODO: Calculate distance-based rewards
+        # TODO: Big reward for eating food
+        # TODO: Big penalty for dying
 
-        if prev_distance is not None:
-            if current_distance < prev_distance:
-                reward += 1
-            elif current_distance > prev_distance:
-                reward -= 1
-
-        self.previous_distance = current_distance
-
-        if game.snake.grow:
-            reward += 10
-
-        if done:
-            reward -= 10
-
-        return reward
+        return 0
 
     def remember(
         self,
-        state: torch.Tensor,
-        action: list[int],
+        state: List[float],
+        action: List[int],
         reward: int,
-        next_state: torch.Tensor,
+        next_state: List[float],
         done: bool,
     ) -> None:
-        self.memory.append((state, action, reward, next_state, done))
+        """Store an experience in memory for later training (experience replay)."""
+        # TODO: Add the experience to memory
+
+        pass
 
     def train_long_memory(self) -> None:
-        if len(self.memory) > BATCH_SIZE:
-            mini_sample = random.sample(self.memory, BATCH_SIZE)
-        else:
-            mini_sample = self.memory
+        """Train the neural network on a batch of experiences from memory."""
+        # TODO: Sample a batch of experiences from memory
+        # TODO: Unpack the batch and train the model
 
-        states, actions, rewards, next_states, dones = zip(*mini_sample)
-        self.trainer.train_step(states, actions, rewards, next_states, dones)
+        pass
 
     def train_short_memory(
         self,
-        state: torch.Tensor,
-        action: list[int],
+        state: List[float],
+        action: List[int],
         reward: int,
-        next_state: torch.Tensor,
+        next_state: List[float],
         done: bool,
     ) -> None:
-        self.trainer.train_step(state, action, reward, next_state, done)
+        """Train the neural network on a single experience (immediate learning)."""
+        pass
 
-    def get_action(self, state: torch.Tensor) -> list[int]:
-        self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
-        final_move: list[int] = [0] * 3
+    def get_action(self, state: List[float]) -> List[int]:
+        """
+        Choose an action based on the current state.
 
-        if random.random() < self.epsilon:
-            move = random.randint(0, 2)
-            final_move[move] = 1
-        else:
-            state = torch.tensor(state, dtype=torch.float).unsqueeze(0)
-            with torch.no_grad():
-                prediction = self.model(state)
-                move = int(torch.argmax(prediction).item())
-                final_move[move] = 1
+        Uses epsilon-greedy strategy:
+        - With probability epsilon: choose random action (exploration)
+        - With probability 1-epsilon: choose best action from neural network (exploitation)
 
-        return final_move
+        Actions: [1,0,0] = straight, [0,1,0] = turn right, [0,0,1] = turn left
+        """
+        # TODO: Decay epsilon over time (explore less as agent learns)
+        # TODO: Initialize action array
+        # TODO: Epsilon-greedy action selection
+
+        return [1, 0, 0]

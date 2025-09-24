@@ -6,6 +6,7 @@ import { Button } from "./ui/button";
 import Link from "next/link";
 import { useState } from "react";
 
+// basic header
 export const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   return (
