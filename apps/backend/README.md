@@ -2,6 +2,27 @@
 
 Welcome to the **CSAI Snake Bootcamp Backend**! This is a **guided learning project** where you'll build a Python WebSocket server that runs an AI-powered Snake game.
 
+## Table of Contents
+
+- [What You'll Learn](#what-youll-learn)
+- [Project Overview](#project-overview)
+- [Backend Architecture Deep Dive](#backend-architecture-deep-dive)
+- [Our Teaching Philosophy: Comments Over Complexity](#our-teaching-philosophy-comments-over-complexity)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [What You Need to Implement](#what-you-need-to-implement)
+- [Learning Path: What to Implement First](#learning-path-what-to-implement-first)
+- [AI Concepts Explained](#ai-concepts-explained)
+- [Key Technologies You'll Use](#key-technologies-youll-use)
+- [Step-by-Step Implementation Guide](#step-by-step-implementation-guide)
+- [Common Issues & Solutions](#common-issues--solutions)
+- [Going Further (Optional Enhancements)](#going-further-optional-enhancements)
+- [Tips for Success](#tips-for-success)
+- [Understanding AI Performance](#understanding-ai-performance)
+- [Resources](#resources)
+- [Success Criteria](#success-criteria)
+- [What You'll Accomplish](#what-youll-accomplish)
+
 ## What You'll Learn
 
 This project will teach you:

@@ -2,6 +2,22 @@
 
 Welcome to the **CSAI Snake Bootcamp Frontend**! This is a **guided learning project** where you'll build a React-based frontend to visualize an AI-powered Snake game in real-time.
 
+## Table of Contents
+
+- [What You'll Learn](#what-youll-learn)
+- [Project Overview](#project-overview)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [What You Need to Implement](#what-you-need-to-implement)
+- [Key Technologies You'll Use](#key-technologies-youll-use)
+- [Step-by-Step Implementation Guide](#step-by-step-implementation-guide)
+- [Design Guidelines](#design-guidelines)
+- [Common Issues & Solutions](#common-issues--solutions)
+- [Going Further (Optional Enhancements)](#going-further-optional-enhancements)
+- [Tips for Success](#tips-for-success)
+- [Resources](#resources)
+- [Success Criteria](#success-criteria)
+
 ## What You'll Learn
 
 This project will teach you:

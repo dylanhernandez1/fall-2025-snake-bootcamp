@@ -2,6 +2,17 @@
 
 This repository features a machine learning-powered Snake game, seamlessly integrated with a Next.js frontend using Socket.IO for real-time communication. Participants will implement AI agents using Deep Q-Networks (DQN) to train snakes that learn to play autonomously.
 
+## Table of Contents
+
+- [What You'll Build](#what-youll-build)
+- [Project Architecture](#project-architecture)
+- [Why We Need the Backend - The AI Game Engine](#why-we-need-the-backend---the-ai-game-engine)
+- [Prerequisites](#prerequisites)
+- [Getting Started](#getting-started)
+- [Getting Started - Key Implementation Concepts](#getting-started---key-implementation-concepts)
+- [File-by-File Implementation Guide](#file-by-file-implementation-guide)
+- [Optional Challenges for Advanced Participants](#optional-challenges-for-advanced-participants)
+
 ## What You'll Build
 
 By the end of this bootcamp, you'll have created:
