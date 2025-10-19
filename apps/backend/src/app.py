@@ -15,13 +15,13 @@ sio.attach(app)
 
 
 # TODO: Create a SocketIO server instance with CORS settings to allow connections from frontend
-# Example: sio = socketio.AsyncServer(cors_allowed_origins="*")
+sio = socketio.AsyncServer(cors_allowed_origins="*")
 
 # TODO: Create a web application instance
-# Example: app = web.Application()
+app = web.Application()
 
 # TODO: Attach the socketio server to the web app
-# Example: sio.attach(app)
+sio.attach(app)
 
 
 # Basic health check endpoint - keep this for server monitoring
@@ -36,7 +36,9 @@ async def connect(sid: str, environ: Dict[str, Any]) -> None:
     """Handle client connections - called when a frontend connects to the server"""
     # TODO: Print a message showing which client connected
     # TODO: You might want to initialize game state here
-    pass
+    print(f"[CONNECT] Client connected: sid={sid}")
+    await sio.save_session(sid, {"game": None, "agent": None, "active": False})
+    await sio.emit("connected", {"message": "Connected to server!"}, to=sid)
 
 
 # TODO: Create a socketio event handler for when clients disconnect
@@ -45,7 +47,14 @@ async def disconnect(sid: str) -> None:
     """Handle client disconnections - cleanup any resources"""
     # TODO: Print a message showing which client disconnected
     # TODO: Clean up any game sessions or resources for this client
-    pass
+    print(f"[DISCONNECT] Client disconnected: sid={sid}")
+    try:
+        session = await sio.get_session(sid)
+        if session:
+            session["active"] = False
+            await sio.save_session(sid, session)
+    except Exception as e:
+        print(f"[ERROR][disconnect] sid={sid} -> {e}")
 
 
 # TODO: Create a socketio event handler for starting a new game
@@ -58,8 +67,37 @@ async def start_game(sid: str, data: Dict[str, Any]) -> None:
     # TODO: Save the game state in the session using sio.save_session()
     # TODO: Send initial game state to the client using sio.emit()
     # TODO: Start the game update loop
+    print(f"[START_GAME] sid={sid}, data={data}")
+    session = await sio.get_session(sid)
 
-    pass
+    try:
+        # You can optionally allow frontend to override grid sizes/tick
+        grid_width = data.get("grid_width")
+        grid_height = data.get("grid_height")
+        tick = data.get("game_tick")
+
+        game = Game()
+
+        if grid_width:
+            game.grid_width = grid_width
+        if grid_height:
+            game.grid_height = grid_height
+        if tick:
+            game.game_tick = tick
+
+        session["game"] = game
+        session["active"] = True
+        await sio.save_session(sid, session)
+
+        # Send initial state
+        await sio.emit("game_started", game.to_dict(), to=sid)
+
+        # Run update loop in background
+        asyncio.create_task(update_game(sid))
+
+    except Exception as e:
+        print(f"[ERROR][start_game] sid={sid} -> {e}")
+        await sio.emit("error", {"message": str(e)}, to=sid)
 
 
 # TODO: Optional - Create event handlers for saving/loading AI models
@@ -76,7 +114,39 @@ async def update_game(sid: str) -> None:
     # TODO: Save the updated session
     # TODO: Send the updated game state to the client
     # TODO: Wait for the appropriate game tick interval before next update
-    pass
+    print(f"[LOOP] Starting game loop for sid={sid}")
+
+    try:
+        while True:
+            session = await sio.get_session(sid)
+            if not session or not session.get("active"):
+                print(f"[LOOP] Ending game loop for sid={sid} (inactive session)")
+                break
+
+            game: Game = session.get("game")
+            if not game:
+                print(f"[LOOP] No active game for sid={sid}")
+                break
+
+            # Step the game forward
+            game.step()
+
+            # Send updated state to frontend
+            await sio.emit("game_update", game.to_dict(), to=sid)
+
+            # If the game ended, notify and stop
+            if not game.running:
+                await sio.emit("game_over", {"score": game.score}, to=sid)
+                print(f"[GAME_OVER] sid={sid} - Final Score: {game.score}")
+                session["active"] = False
+                await sio.save_session(sid, session)
+                break
+
+            await asyncio.sleep(game.game_tick)
+
+    except Exception as e:
+        print(f"[ERROR][update_game] sid={sid} -> {e}")
+        await sio.emit("error", {"message": str(e)}, to=sid)
 
 
 # TODO: Helper function for AI agent interaction with game
@@ -107,7 +177,16 @@ async def main() -> None:
     # TODO: Print server startup message
     # TODO: Keep the server running indefinitely
     # TODO: Handle any errors gracefully
-    pass
+    app.router.add_get("/ping", handle_ping)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", 8765)
+    print("[SERVER] Starting on http://localhost:8765")
+    await site.start()
+
+    while True:
+        await asyncio.sleep(3600)  # keep alive
+    
 
 
 if __name__ == "__main__":
