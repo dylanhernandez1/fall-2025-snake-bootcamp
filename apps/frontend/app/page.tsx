@@ -1,162 +1,182 @@
 "use client";
 
-import { io, Socket } from "socket.io-client";
 import { useEffect, useRef, useState } from "react";
+import { io, Socket } from "socket.io-client";
 
-export default function HomePage() {
+const HEADER_HEIGHT_PX = 64;
+
+interface GameState {
+  grid_width: number;
+  grid_height: number;
+  snake: [number, number][];
+  food: [number, number];
+  score: number;
+  running?: boolean;
+}
+
+export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [score, setScore] = useState(0);
-  const [gameRunning, setGameRunning] = useState(false);
-  const [snake, setSnake] = useState([{ x: 5, y: 5 }]);
-  const [food, setFood] = useState({ x: 8, y: 8 });
-  const [direction, setDirection] = useState("right");
+  const socketRef = useRef<Socket>();
+  const [game, setGame] = useState<GameState | null>(null);
   const [gameOver, setGameOver] = useState(false);
 
-  const gridSize = 20; // pixels per cell
-  const gridCount = 25; // 25x25 grid → 500x500px canvas
-  const width = gridSize * gridCount;
-  const height = gridSize * gridCount;
-
-  // handle keypresses
+  // === Connect to backend & listen for updates ===
   useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (!gameRunning) return;
-      if (e.key === "ArrowUp" && direction !== "down") setDirection("up");
-      if (e.key === "ArrowDown" && direction !== "up") setDirection("down");
-      if (e.key === "ArrowLeft" && direction !== "right") setDirection("left");
-      if (e.key === "ArrowRight" && direction !== "left") setDirection("right");
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [direction, gameRunning]);
+    if (!socketRef.current) {
+      socketRef.current = io("http://localhost:8765");
 
-  // draw everything
+      const socket = socketRef.current;
+
+      const onConnect = () => {
+        console.log("[CONNECT] Connected to backend");
+        socket.emit("start_game", {
+          grid_width: 29,
+          grid_height: 19,
+          game_tick: 0.05,
+        });
+      };
+
+      const onGameStarted = (data: GameState) => {
+        console.log("[GAME_STARTED]", data);
+        setGame(data);
+        setGameOver(false);
+      };
+
+      const onGameUpdate = (data: GameState) => {
+        setGame(data);
+      };
+
+      const onGameOver = (data: { score: number }) => {
+        console.log("[GAME_OVER]", data);
+        setGameOver(true);
+      };
+
+      socket.on("connect", onConnect);
+      socket.on("game_started", onGameStarted);
+      socket.on("game_update", onGameUpdate);
+      socket.on("game_over", onGameOver);
+
+      return () => {
+        socket.off("connect", onConnect);
+        socket.off("game_started", onGameStarted);
+        socket.off("game_update", onGameUpdate);
+        socket.off("game_over", onGameOver);
+      };
+    }
+  }, []);
+
+  // === Drawing logic ===
   useEffect(() => {
-    const ctx = canvasRef.current?.getContext("2d");
-    if (!ctx) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
 
-    ctx.clearRect(0, 0, width, height);
+    if (!ctx || !game) return;
 
-    // draw grid
-    ctx.strokeStyle = "#333";
-    for (let i = 0; i < gridCount; i++) {
-      for (let j = 0; j < gridCount; j++) {
-        ctx.strokeRect(i * gridSize, j * gridSize, gridSize, gridSize);
+    // Resize canvas to fill available space under header
+    const containerWidth = window.innerWidth;
+    const containerHeight = window.innerHeight - HEADER_HEIGHT_PX;
+    const cellSize = Math.floor(
+      Math.min(containerWidth / game.grid_width, containerHeight / game.grid_height)
+    );
+
+    canvas.width = game.grid_width * cellSize;
+    canvas.height = game.grid_height * cellSize;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw grid background
+    ctx.fillStyle = "#0a0a0a";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw snake
+    if (Array.isArray(game.snake)) {
+      ctx.fillStyle = "#22c55e"; // green
+      for (const [x, y] of game.snake) {
+        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
       }
     }
 
-    // draw snake
-    ctx.fillStyle = "#00FFFF";
-    snake.forEach((segment) => {
-      ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize);
-    });
+    // Draw food
+    if (Array.isArray(game.food)) {
+      const [fx, fy] = game.food;
+      ctx.fillStyle = "#ef4444"; // red
+      ctx.beginPath();
+      ctx.arc(
+        fx * cellSize + cellSize / 2,
+        fy * cellSize + cellSize / 2,
+        cellSize / 3,
+        0,
+        2 * Math.PI
+      );
+      ctx.fill();
+    }
 
-    // draw food
-    ctx.fillStyle = "red";
-    ctx.beginPath();
-    ctx.arc(
-      food.x * gridSize + gridSize / 2,
-      food.y * gridSize + gridSize / 2,
-      gridSize / 2 - 2,
-      0,
-      Math.PI * 2
-    );
-    ctx.fill();
-  }, [snake, food]);
+    // Draw score overlay (top left)
+    ctx.fillStyle = "white";
+    ctx.font = `${Math.max(16, cellSize)}px monospace`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText(`Score: ${game.score}`, 8, 8);
+  }, [game]);
 
-  // main game loop
+  // === Handle window resizing ===
   useEffect(() => {
-    if (!gameRunning || gameOver) return;
-    const interval = setInterval(() => {
-      moveSnake();
-    }, 150);
-    return () => clearInterval(interval);
-  });
+    const handleResize = () => {
+      if (game) {
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            const cellSize = Math.floor(
+              Math.min(
+                window.innerWidth / game.grid_width,
+                (window.innerHeight - HEADER_HEIGHT_PX) / game.grid_height
+              )
+            );
+            canvas.width = game.grid_width * cellSize;
+            canvas.height = game.grid_height * cellSize;
+          }
+        }
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [game]);
 
-  function moveSnake() {
-    const newSnake = [...snake];
-    const head = { ...newSnake[0] };
-
-    if (direction === "up") head.y -= 1;
-    if (direction === "down") head.y += 1;
-    if (direction === "left") head.x -= 1;
-    if (direction === "right") head.x += 1;
-
-    // check wall collision
-    if (
-      head.x < 0 ||
-      head.y < 0 ||
-      head.x >= gridCount ||
-      head.y >= gridCount
-    ) {
-      setGameOver(true);
-      setGameRunning(false);
-      return;
-    }
-
-    // check self collision
-    if (newSnake.some((seg) => seg.x === head.x && seg.y === head.y)) {
-      setGameOver(true);
-      setGameRunning(false);
-      return;
-    }
-
-    newSnake.unshift(head);
-
-    // check food
-    if (head.x === food.x && head.y === food.y) {
-      setScore((s) => s + 1);
-      setFood({
-        x: Math.floor(Math.random() * gridCount),
-        y: Math.floor(Math.random() * gridCount),
-      });
-    } else {
-      newSnake.pop();
-    }
-
-    setSnake(newSnake);
-  }
-
-  function startGame() {
-    setSnake([{ x: 5, y: 5 }]);
-    setDirection("right");
-    setFood({ x: 8, y: 8 });
-    setScore(0);
+  const handleRestart = () => {
+    socketRef.current?.emit("start_game", {
+      grid_width: 29,
+      grid_height: 19,
+      game_tick: 0.05,
+    });
     setGameOver(false);
-    setGameRunning(true);
-  }
-
-  function handleRestart() {
-    startGame();
-  }
+  };
 
   return (
-    <div className="relative flex flex-col items-center justify-center mt-8">
-      {/* Score display (top-left of the grid) */}
-      <div className="absolute top-0 left-0 text-red-500 font-bold text-lg z-20">
-        Score: {score}
-      </div>
-
-      {/* Game canvas */}
+    <div className="absolute top-16 left-0 right-0 bottom-0 flex flex-col items-center justify-center">
       <canvas
         ref={canvasRef}
-        width={width}
-        height={height}
-        className="border border-gray-700 rounded-xl bg-black"
-      ></canvas>
+        style={{
+          border: "2px solid #333",
+          backgroundColor: "#000",
+          maxWidth: "100%",
+          maxHeight: "100%",
+        }}
+      />
 
-      {/* Overlay (only shown when not running) */}
-      {!gameRunning && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 rounded-2xl z-30">
-          <h2 className="text-cyan-400 text-3xl font-bold mb-2">
-            CSAI Student
-          </h2>
-          <p className="text-white mb-4">Score: {score}</p>
+      {/* Overlay for Game Over + Score */}
+      {gameOver && (
+        <div className="absolute flex flex-col items-center justify-center backdrop-blur-md bg-black/70 rounded-2xl p-8 text-center">
+          <h2 className="text-3xl font-bold text-white mb-4">Game Over</h2>
+          <p className="text-lg text-gray-300 mb-6">
+            Final Score: {game?.score ?? 0}
+          </p>
           <button
             onClick={handleRestart}
-            className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-500"
+            className="px-6 py-3 rounded-lg bg-green-500 text-white font-semibold hover:bg-green-600 transition"
           >
-            {gameOver ? "Restart" : "Start Game"}
+            Restart
           </button>
         </div>
       )}
