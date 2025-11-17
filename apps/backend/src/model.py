@@ -1,14 +1,13 @@
-# TODO: Import PyTorch for building neural networks
-# import torch
-# import torch.optim as optim
-# import torch.nn as nn
-# import torch.nn.functional as F
-# import os
-# import datetime
+import torch
+import torch.optim as optim
+import torch.nn as nn
+import torch.nn.functional as F
+import os
+import datetime
 from typing import Any
 
 
-class LinearQNet:
+class LinearQNet(nn.Module):
     """
     A simple neural network for Q-learning in the Snake game.
 
@@ -27,12 +26,11 @@ class LinearQNet:
             hidden_size: Number of neurons in hidden layer (e.g., 256)
             output_size: Number of output actions (3: straight, right, left)
         """
-        # Initialize the neural network as a PyTorch nn.Module
-        super().__init__()
-
-        # TODO: Create the network layers
-
-        pass
+        super(LinearQNet, self).__init__()
+        
+        # Create the network layers
+        self.linear1 = nn.Linear(input_size, hidden_size)
+        self.linear2 = nn.Linear(hidden_size, output_size)
 
     def forward(self, x: Any) -> Any:
         """
@@ -44,25 +42,41 @@ class LinearQNet:
         Returns:
             Output tensor with Q-values for each action
         """
-        # TODO: Apply ReLU activation to first layer
-        # TODO: Apply second layer (no activation for Q-values)
-
+        # Apply ReLU activation to first layer
+        x = F.relu(self.linear1(x))
+        # Apply second layer (no activation for Q-values)
+        x = self.linear2(x)
         return x
 
     def save(self) -> None:
         """Save the trained model to disk with timestamp."""
-        # TODO: Create model directory if it doesn't exist
-        # TODO: Generate filename with timestamp
-        # TODO: Save the model state dictionary
-
-        pass
+        # Create model directory if it doesn't exist
+        model_folder_path = './models'
+        if not os.path.exists(model_folder_path):
+            os.makedirs(model_folder_path)
+        
+        # Generate filename with timestamp
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_name = f'model_{timestamp}.pth'
+        file_path = os.path.join(model_folder_path, file_name)
+        
+        # Save the model state dictionary
+        torch.save(self.state_dict(), file_path)
+        print(f"Model saved to {file_path}")
 
     def load(self, file_name: str) -> None:
         """Load a previously saved model from disk."""
-        # TODO: Construct full file path
-        # TODO: Load the model state dictionary
-
-        pass
+        # Construct full file path
+        model_folder_path = './models'
+        file_path = os.path.join(model_folder_path, file_name)
+        
+        # Load the model state dictionary
+        if os.path.exists(file_path):
+            self.load_state_dict(torch.load(file_path))
+            self.eval()
+            print(f"Model loaded from {file_path}")
+        else:
+            print(f"Model file not found: {file_path}")
 
 
 class QTrainer:
@@ -89,11 +103,15 @@ class QTrainer:
             lr: Learning rate for the optimizer
             gamma: Discount factor for future rewards
         """
-        # TODO: Store hyperparameters
-        # TODO: Initialize Adam optimizer
-        # TODO: Initialize Mean Squared Error loss function
-
-        pass
+        self.lr = lr
+        self.gamma = gamma
+        self.model = model
+        
+        # Initialize Adam optimizer
+        self.optimizer = optim.Adam(model.parameters(), lr=self.lr)
+        
+        # Initialize Mean Squared Error loss function
+        self.criterion = nn.MSELoss()
 
     def train_step(
         self, state: Any, action: Any, reward: Any, next_state: Any, done: Any
@@ -110,10 +128,38 @@ class QTrainer:
             next_state: Next game state(s)
             done: Whether the game ended
         """
-        # TODO: Handle both single experiences and batches
-        # TODO: Get current Q-values from the model
-        # TODO: Clone predictions to create target values
-        # TODO: Update target values using Bellman equation
-        # TODO: Perform gradient descent
-
-        pass
+        # Convert to tensors and handle both single experiences and batches
+        state = torch.tensor(state, dtype=torch.float)
+        next_state = torch.tensor(next_state, dtype=torch.float)
+        action = torch.tensor(action, dtype=torch.long)
+        reward = torch.tensor(reward, dtype=torch.float)
+        
+        # If single experience, add batch dimension
+        if len(state.shape) == 1:
+            state = torch.unsqueeze(state, 0)
+            next_state = torch.unsqueeze(next_state, 0)
+            action = torch.unsqueeze(action, 0)
+            reward = torch.unsqueeze(reward, 0)
+            done = (done, )
+        
+        # Get current Q-values from the model
+        pred = self.model(state)
+        
+        # Clone predictions to create target values
+        target = pred.clone()
+        
+        # Update target values using Bellman equation
+        for idx in range(len(done)):
+            Q_new = reward[idx]
+            if not done[idx]:
+                # Q_new = r + gamma * max(Q(s', a'))
+                Q_new = reward[idx] + self.gamma * torch.max(self.model(next_state[idx]))
+            
+            # Update the Q-value for the action taken
+            target[idx][torch.argmax(action[idx]).item()] = Q_new
+        
+        # Perform gradient descent
+        self.optimizer.zero_grad()
+        loss = self.criterion(target, pred)
+        loss.backward()
+        self.optimizer.step()
